@@ -1,23 +1,84 @@
-node{
-   stage('SCM Checkout'){
-     git 'https://github.com/javahometech/my-app'
+
+
+pipeline{
+
+
+
+
+   agent any
+
+
+   stages{
+
+
+      
+
+
+       stage("Maven Build"){
+
+
+           steps{
+
+
+               sh 'mvn clean package'
+
+
+               sh 'mv target/myweb*.war target/myweb.war'
+
+
+           }
+
+
+       }
+
+
+      
+
+
+       stage("Deploy to Tomcat Development"){
+
+
+           steps{
+
+
+              sshagent(['tomcat-dev']) {
+
+
+                  sh "scp -o StrictHostKeyChecking=no target/myweb.war ec2-user@172.31.19.84:/opt/tomcat8/webapps/"
+
+
+                  sh "ssh ec2-user@172.31.19.84 /opt/tomcat8/bin/shutdown.sh"
+
+
+                  sh "ssh ec2-user@172.31.19.84 /opt/tomcat8/bin/startup.sh"
+
+
+              }
+
+
+           }
+
+
+       }
+
+
    }
-   stage('Compile-Package'){
-      // Get maven home path
-      def mvnHome =  tool name: 'maven-3', type: 'maven'   
-      sh "${mvnHome}/bin/mvn package"
+  post {
+
+
+     always {
+
+
+       cleanWs()
+
+
+     }
+
+
    }
-   stage('Email Notification'){
-      mail bcc: '', body: '''Hi Welcome to jenkins email alerts
-      Thanks
-      Hari''', cc: '', from: '', replyTo: '', subject: 'Jenkins Job', to: 'hari.kammana@gmail.com'
-   }
-   stage('Slack Notification'){
-       slackSend baseUrl: 'https://hooks.slack.com/services/',
-       channel: '#jenkins-pipeline-demo',
-       color: 'good', 
-       message: 'Welcome to Jenkins, Slack!', 
-       teamDomain: 'javahomecloud',
-       tokenCredentialId: 'slack-demo'
-   }
+
+   
+
+
 }
+
